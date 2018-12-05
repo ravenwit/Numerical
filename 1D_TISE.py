@@ -508,6 +508,34 @@ def bessel_equation(eig_val):
     return eigenvalues
 
 
+def sc_equation(eig_val):
+    """
+        This function defines the functions required for the Sturm-Liouville equation
+        to be Bessel equation and asks user for the conditions in order to solve it.
+
+
+    :param eig_val: Given eigenvalue
+    :return: Proper eigenvalues for the general Sturm-Liouville equation
+    """
+    global p
+    global p_d
+    global q
+    global s
+    global conditions
+    global PROB
+
+    p = lambda x: 1
+    p_d = lambda x: 0
+    r = lambda x: 6*(1/2-1/(np.cosh(x)**2))
+    w = lambda x: 1
+    q = lambda x, eig_value: -r(x) + eig_value * w(x)
+    s = lambda x: 0
+    eigenvalue = lambda x: x
+    eigenvalues = [eigenvalue(i) for i in eig_val]
+    __set_conditions()
+
+    return eigenvalues
+
 def custom_equation(eig_val):
     """
         This function asks user for the required functions and the conditions
@@ -544,41 +572,89 @@ def custom_equation(eig_val):
 
 
 if __name__ == '__main__':
-    eq = int(input("Which function do you want to plot \n "
-                   "\t[1] Legendre Equation\n"
-                   "\t[2] Bessel Equation\n"
-                   "\t[3] Custom Equation\n\n"
-                   "\tSelect (1/2/3): "))
-    print('____________________________________________________')
-    #   Asking user for the eigenvalues
-    eig_val = list(map(float, [i for i in input("Enter some eigenvalues "
-                                                "(with comma to separate): ").split(',')]))
-    #   Asking user for the plot range
-    plot_range = list(map(float, [i for i in input('Enter plot range '
-                                                   '(two values of x separated with comma): ').split(',')]))
-    #   Sort the plot range
-    plot_range.sort()
+    zero = 1e-5
+    #   Initial guess for the secant method to run at
+    guess = 0.1
 
-    eigenvalues = 0
-    if eq == 1:
-        eigenvalues = legendre_equation(eig_val)
-    elif eq == 2:
-        eigenvalues = bessel_equation(eig_val)
-    elif eq == 3:
-        eigenvalues = custom_equation(eig_val)
+    # Isolating the initial condition from conditions
+    init_cond = conditions[0:2]
+    # Isolating the boundary condition from conditions
+    bound_cond = conditions[2:4]
 
-    #   Initializing plot
-    fig, ax = plt.subplots()
-    plt.xlabel("x")
-    plt.ylabel("Y")
-    plt.xlim(plot_range[0], plot_range[1])
-    # plt.ylim(-1.5, 1.5)
-    #   Solving and plotting for the given eigenvalues
-    i = 0
-    for eigenvalue in eigenvalues:
-        X, Y = get_func(eigenvalue, plot_range)
-        ax.plot(X, Y, label='Y {}'.format(eig_val[i]), marker='o', markersize=1)
-        i += 1
-        fig.legend()
-        fig.show()
-    plt.show()
+    #   Assuming the initial value of the 1st derivative of the solution function
+    #   as guess.
+    init_cond.append(guess)
+
+    #   Approximating a second guess
+    guess2 = guess + step
+    guess3 = 0
+
+    #   The loop for executing secant method
+    while abs(guess2 - guess) >= zero:
+        init_cond[2] = guess
+        x, y1, y2 = _runge_kutta(init_cond, bound_cond[0], eig_val, step, 0)
+        y1_boundary_f = y1[-1] - bound_cond[1]
+        init_cond[2] = guess2
+        x, y1, y2 = _runge_kutta(init_cond, bound_cond[0], eig_val, step, 0)
+        y1_boundary2_f = y1[-1] - bound_cond[1]
+
+        dnmntr = (y1_boundary2_f - y1_boundary_f)
+        guess3 = guess2 - y1_boundary2_f * (guess2 - guess) / dnmntr
+
+        guess = guess2
+        guess2 = guess3
+
+    #   Found the initial value of the 1st derivative of the solution function
+    #   to be guess3
+    init_cond[2] = guess3
+    y=[0, step]
+    ev = 2.568
+    i =2
+    while y[i-1]-1>=0.0001:
+        while y[i-1] < 1:
+            sc_equation(ev)
+            y[i]=_get_next_point(ev,y[i-1], y[i-2],x[i-1])
+            x[i]=x[-1]+step
+            i+=1
+        ev+=step
+    print(ev)
+
+    # eq = int(input("Which function do you want to plot \n "
+    #                "\t[1] Legendre Equation\n"
+    #                "\t[2] Bessel Equation\n"
+    #                "\t[3] Custom Equation\n\n"
+    #                "\tSelect (1/2/3): "))
+    # print('____________________________________________________')
+    # #   Asking user for the eigenvalues
+    # eig_val = list(map(float, [i for i in input("Enter some eigenvalues "
+    #                                             "(with comma to separate): ").split(',')]))
+    # #   Asking user for the plot range
+    # plot_range = list(map(float, [i for i in input('Enter plot range '
+    #                                                '(two values of x separated with comma): ').split(',')]))
+    # #   Sort the plot range
+    # plot_range.sort()
+    #
+    # eigenvalues = 0
+    # if eq == 1:
+    #     eigenvalues = legendre_equation(eig_val)
+    # elif eq == 2:
+    #     eigenvalues = bessel_equation(eig_val)
+    # elif eq == 3:
+    #     eigenvalues = custom_equation(eig_val)
+    #
+    # #   Initializing plot
+    # fig, ax = plt.subplots()
+    # plt.xlabel("x")
+    # plt.ylabel("Y")
+    # plt.xlim(plot_range[0], plot_range[1])
+    # # plt.ylim(-1.5, 1.5)
+    # #   Solving and plotting for the given eigenvalues
+    # i = 0
+    # for eigenvalue in eigenvalues:
+    #     X, Y = get_func(eigenvalue, plot_range)
+    #     ax.plot(X, Y, label='Y {}'.format(eig_val[i]), marker='o', markersize=1)
+    #     i += 1
+    #     fig.legend()
+    #     fig.show()
+    # plt.show()
+    #

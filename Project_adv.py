@@ -13,9 +13,11 @@ trajectory = np.array([trajectory[0], np.concatenate((trajectory[1], np.array([[
 array([[2, 2, 2],
        [1, 2, 3]])
 '''
+DEV = 50
 
 h = 0.00001
-points = 500
+points = 2500
+points += DEV
 
 c = 137
 q = [1, -1]
@@ -41,14 +43,14 @@ def _init_trajectory():
     acceleration = np.array([shaped_zeroes, shaped_zeroes])
     radiation = np.array([np.zeros(points), np.zeros(points)])
 
-    # radius = 0.005
+    radius = 0.005
     # radius = 0.004
     # radius = 0.005
-    radius = 0.05
+    # radius = 0.05
     # theta = np.pi / 4
     theta = np.pi / 4
-    phi = np.pi / 4
-    # phi = np.pi / 2
+    # phi = np.pi / 4
+    phi = np.pi / 2
     x_radius = radius * np.sin(theta) * np.cos(phi)
     y_radius = radius * np.sin(theta) * np.sin(phi)
     z_radius = radius * np.cos(phi)
@@ -58,10 +60,10 @@ def _init_trajectory():
 
     velocity[0][0] = [0, 0, 0]
     # velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
-    # velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
+    velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
     # velocity[1][0] = [-0.03 * c, -0.0003 * c, 0.00001 * c]
     # velocity[1][0] = [0.04 * c, -0.0008 * c, 0.00001 * c]
-    velocity[1][0] = [0.1 * c, 0.1 * c, 0.1 * c]
+    # velocity[1][0] = [0.1 * c, 0.1 * c, 0.1 * c]
     # velocity[1][0] = [0.01 * c, -0.01 * c, -0.01 * c]
     # velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
 
@@ -108,6 +110,34 @@ def _retarded_index(body, current_index, position, t):
         guess2 = guess3
         guess2_index = int(guess3 * (1 / h))
         if guess2_index <= 0:
+            guess2_index = 0
+            break
+
+    return guess2_index
+
+def _advanced_index(body, current_index, position, t):
+    global h
+    # zero = 1e-5
+    guess_index = current_index + 1
+    guess = time[guess_index]
+    guess2_index = current_index + 2
+    guess2 = time[guess2_index]
+
+    while abs(guess2_index - guess_index) != 0:
+        f1 = c * (guess - t) - np.linalg.norm(position - trajectory[int(not body)][guess_index])
+        f2 = c * (guess2 - t) - np.linalg.norm(position - trajectory[int(not body)][guess2_index])
+
+        dnmntr = (f2 - f1)
+        guess3 = guess2 - f2 * (guess2 - guess) / dnmntr
+
+        guess = guess2
+        guess_index = guess2_index
+        guess2 = guess3
+        guess2_index = int(guess3 * (1 / h))
+        if guess2_index >= points or guess_index >= points:
+            guess2_index = points - 1
+            break
+        elif guess2_index<=0 or guess2_index<=0:
             guess2_index = 0
             break
 
@@ -180,12 +210,242 @@ def EBfield(body, index, position, t):
     return E, B
 
 
+def EBfield_self(body, index, position, t):
+    global h
+    global trajectory
+    global velocity
+    global acceleration
+    global time
+    global points
+    E = 0
+    B = 0
+    if index < 2:
+        R = position - trajectory[int(not body)][index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+        E = q[int(not body)] / r ** 2
+        E = E * R_unit
+        B = np.cross(R_unit, E)/c
+
+    else:
+        ret_index = _retarded_index(body, index, position, t)
+
+        R = position - trajectory[int(body)][ret_index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+
+        V = velocity[int(body)][ret_index]
+        v = np.linalg.norm(V)
+        beta = V / c
+        gamma = 1 / np.sqrt(1 - v ** 2 / c ** 2)
+        # V_h = velocity[int(not body)][ret_index - 1]
+        # V_dot = (V - V_h) / h
+        V_dot = acceleration[int(body)][ret_index]
+        beta_dot = V_dot / c
+
+        VR = np.dot(V, R)
+
+        # factor1 = R_unit - beta
+        # factor2 = (1 - np.dot(R_unit, beta)) ** 3
+        # factor3 = (gamma ** 2) * factor2 * r ** 2
+        # factor4 = factor1 / factor3
+        # factor5 = np.cross(R_unit, np.cross(factor1, beta_dot))
+        # factor6 = c * factor2 * r
+        # factor7 = factor5 / factor6
+        # factor8 = factor4 + factor7
+        # # factor8 = factor4
+        #
+        # E = q[int(not body)] * factor8
+
+        factor1 = 1 / (r - VR / c) ** 3
+        factor2 = R - r * V / c
+        factor3 = 1 - (v / c) ** 2
+        factor4 = factor3 * factor2
+        factor5 = V_dot / c ** 2
+        factor6 = np.cross(factor2, factor5)
+        factor7 = np.cross(R, factor6)
+        factor8 = factor4 + factor7
+        # factor8 = factor4
+        factor9 = factor1 * factor8
+
+        E = q[int(body)] * factor9
+
+        #
+        B = np.cross(R_unit, E)
+
+    return E, B
+
+
+def EBfield_adv(body, index, position, t):
+    global h
+    global trajectory
+    global velocity
+    global acceleration
+    global time
+    global points
+    E = 0
+    B = 0
+    if index >= points+DEV:
+        R = position - trajectory[int(not body)][index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+        E = q[int(not body)] / r ** 2
+        E = E * R_unit
+        B = np.cross(R_unit, E)/c
+
+    else:
+        ret_index = _advanced_index(body, index, position, t)
+
+        R = position - trajectory[int(not body)][ret_index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+
+        V = velocity[int(not body)][ret_index]
+        v = np.linalg.norm(V)
+        beta = V / c
+        gamma = 1 / np.sqrt(1 - v ** 2 / c ** 2)
+        # V_h = velocity[int(not body)][ret_index - 1]
+        # V_dot = (V - V_h) / h
+        V_dot = acceleration[int(not body)][ret_index]
+        beta_dot = V_dot / c
+
+        VR = np.dot(V, R)
+
+        # factor1 = R_unit - beta
+        # factor2 = (1 - np.dot(R_unit, beta)) ** 3
+        # factor3 = (gamma ** 2) * factor2 * r ** 2
+        # factor4 = factor1 / factor3
+        # factor5 = np.cross(R_unit, np.cross(factor1, beta_dot))
+        # factor6 = c * factor2 * r
+        # factor7 = factor5 / factor6
+        # factor8 = factor4 + factor7
+        # # factor8 = factor4
+        #
+        # E = q[int(not body)] * factor8
+
+        factor1 = 1 / (r + VR / c) ** 3
+        factor2 = R + r * V / c
+        factor3 = 1 - (v / c) ** 2
+        factor4 = factor3 * factor2
+        factor5 = V_dot / c ** 2
+        factor6 = np.cross(factor2, factor5)
+        factor7 = np.cross(R, factor6)
+        factor8 = factor4 + factor7
+        # factor8 = factor4
+        factor9 = factor1 * factor8
+
+        E = q[int(not body)] * factor9
+
+        #
+        B = -np.cross(R_unit, E)
+
+    return E, B
+
+
+def EBfield_adv_self(body, index, position, t):
+    global h
+    global trajectory
+    global velocity
+    global acceleration
+    global time
+    global points
+    E = 0
+    B = 0
+    if index >= points+100:
+        R = position - trajectory[int(not body)][index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+        E = q[int(not body)] / r ** 2
+        E = E * R_unit
+        B = np.cross(R_unit, E)/c
+
+    else:
+        ret_index = _advanced_index(body, index, position, t)
+
+        R = position - trajectory[int(body)][ret_index]
+        r = np.linalg.norm(R)
+        R_unit = R / r
+
+        V = velocity[int(body)][ret_index]
+        v = np.linalg.norm(V)
+        beta = V / c
+        gamma = 1 / np.sqrt(1 - v ** 2 / c ** 2)
+        # V_h = velocity[int(not body)][ret_index - 1]
+        # V_dot = (V - V_h) / h
+        V_dot = acceleration[int(body)][ret_index]
+        beta_dot = V_dot / c
+
+        VR = np.dot(V, R)
+
+        # factor1 = R_unit - beta
+        # factor2 = (1 - np.dot(R_unit, beta)) ** 3
+        # factor3 = (gamma ** 2) * factor2 * r ** 2
+        # factor4 = factor1 / factor3
+        # factor5 = np.cross(R_unit, np.cross(factor1, beta_dot))
+        # factor6 = c * factor2 * r
+        # factor7 = factor5 / factor6
+        # factor8 = factor4 + factor7
+        # # factor8 = factor4
+        #
+        # E = q[int(not body)] * factor8
+
+        factor1 = 1 / (r - VR / c) ** 3
+        factor2 = R - r * V / c
+        factor3 = 1 - (v / c) ** 2
+        factor4 = factor3 * factor2
+        factor5 = V_dot / c ** 2
+        factor6 = np.cross(factor2, factor5)
+        factor7 = np.cross(R, factor6)
+        factor8 = factor4 + factor7
+        # factor8 = factor4
+        factor9 = factor1 * factor8
+
+        E = q[int(body)] * factor9
+
+        #
+        B = np.cross(R_unit, E)
+
+    return E, B
+
+
 def LorentzForce(body, index, position, velocity, t):
     E, B = EBfield(body, index, position, t)
     V = velocity
 
     return q[body] * (E + np.cross(V, B))
     # return np.array([3260,5230,-630])
+
+
+def LorentzForce_T(body, index, position, velocity, t):
+    E, B = EBfield(body, index, position, t)
+    E1, B1 = EBfield_adv(body, index, position, t)
+    Es, Bs = EBfield(body, index, position, t)
+    E1s, B1s = EBfield_adv(body, index, position, t)
+
+    k = -1
+    E_T1 = (E+E1)/2
+    E_T2 = (E-E1)*(k+1/2)
+    B_T1 = (B+B1)/2
+    B_T2 = (B-B1)*(k+1/2)
+    E_T = E_T1 + E_T2
+    B_T = B_T1+B_T2
+
+    # E_T1s = (Es+E1s)/2
+    # E_T2s = (Es-E1s)*(k+1/2)
+    # B_T1s = (Bs+B1s)/2
+    # B_T2s = (Bs-B1s)*(k+1/2)
+    # E_Ts = E_T1s + E_T2s
+    # B_Ts = B_T1s+B_T2s
+    #
+    # E_T += E_Ts
+    # B_T += B_Ts
+
+    V = velocity
+
+    # return q[body] * (E_T + np.cross(V, B_T))
+    # return np.array([3260,5230,-630])
+    if index>4 and body==1: return q[body] * (E_T + np.cross(V, B_T)) - ((acceleration[body][index]-acceleration[body][index-1])/h)*q[body]**2/(6*np.pi*c)
+    else: return q[body] * (E_T + np.cross(V, B_T))
 
 
 def __velocity(position, velocity, t, **kwargs):
@@ -195,12 +455,15 @@ def __velocity(position, velocity, t, **kwargs):
 def __acceleration(position, velocity, t, **kwargs):
     body = 0
     index = 0
+    ret = 0
     if kwargs is not None:
         for key, value in kwargs.items():
             if key == "body":
                 body = value
             elif key == "index":
                 index = value
+            elif key == "ret":
+                ret = value
     else:
         sys.exit()
 
@@ -210,10 +473,11 @@ def __acceleration(position, velocity, t, **kwargs):
     factor3 = factor2 * m[body]
     factor4 = factor1 / factor3
 
-    return factor4 * LorentzForce(body, index, position, velocity, t)
+    if ret == 0: return factor4 * LorentzForce(body, index, position, velocity, t)
+    if ret == 1: return factor4 * LorentzForce_T(body, index, position, velocity, t)
 
 
-def _ode_solve(body, index):
+def _ode_solve(body, index, ret):
     global h
     global trajectory
     global velocity
@@ -225,7 +489,7 @@ def _ode_solve(body, index):
     last_time = time[index]
 
     n_t, n_position, n_velocity = rk.get_single_point(last_position, last_velocity, last_time, __velocity,
-                                                      __acceleration, h, 1, body=body, index=index)
+                                                      __acceleration, h, 1, body=body, index=index, ret=ret)
     return n_position, n_velocity
 
 
@@ -242,7 +506,7 @@ ax.set_zlabel("Z Axis", fontsize=16)
 # ax.set_xlim3d([0.0, 0.01])
 
 
-def get_trajectory_iter(index):
+def get_trajectory_iter(index, ret):
     global h
     global trajectory
     global velocity
@@ -254,7 +518,7 @@ def get_trajectory_iter(index):
     else:
 
         # For proton
-        n_position0, n_velocity0 = _ode_solve(0, index - 1)
+        n_position0, n_velocity0 = _ode_solve(0, index - 1, ret)
 
         # print(n_position0)
 
@@ -262,14 +526,15 @@ def get_trajectory_iter(index):
         velocity[0][index] = n_velocity0
 
         # For electron
-        n_position1, n_velocity1 = _ode_solve(1, index - 1)
+        n_position1, n_velocity1 = _ode_solve(1, index - 1, ret)
 
         print(n_position1)
 
         trajectory[1][index] = n_position1
         velocity[1][index] = n_velocity1
 
-        time.append(time[-1] + h)
+        if ret==0:time.append(time[-1] + h)
+
 
         acceleration[0][index] = __acceleration(trajectory[0][index], velocity[0][index], time[index],
                                                 body=0, index=index)
@@ -288,7 +553,7 @@ def get_trajectory_anim(index):
         _init_trajectory()
     else:
         # For proton
-        n_position0, n_velocity0 = _ode_solve(0, index - 1)
+        n_position0, n_velocity0 = _ode_solve(0, index - 1, 1)
 
         print(n_position0)
 
@@ -296,7 +561,7 @@ def get_trajectory_anim(index):
         velocity[0][index] = n_velocity0
 
         # For electron
-        n_position1, n_velocity1 = _ode_solve(1, index - 1)
+        n_position1, n_velocity1 = _ode_solve(1, index - 1, 1)
 
         print(n_position1)
 
@@ -318,8 +583,15 @@ def get_trajectory_anim(index):
 
 
 def get_trajectory():
-    for i in range(points):
-        get_trajectory_iter(i)
+    global trajectory
+    for i in range(0, points):
+        get_trajectory_iter(i, 0)
+    for i in range(1, points-100):
+        get_trajectory_iter(i, 1)
+    # for i in range(1, points-100):
+    #     get_trajectory_iter(i, 1)
+    trajectory=trajectory[:, :-DEV]
+
 
 
 def plotEnergy():
@@ -533,13 +805,13 @@ if __name__ == '__main__':
     # ani = anim.FuncAnimation(fig, get_trajectory_anim, points, interval=1, blit=False)
     get_trajectory()
     # plotVE(1)
-    plotEnergy()
+    # plotEnergy()
     # plotMomentum()
     plotTrajectory()
     # plotRadiation(0)
-    plotRadiation(1)
+    # plotRadiation(1)
     # plotVelocity(0)
-    plotVelocity(1)
+    # plotVelocity(1)
     # plotVelocityRadius(1)
     # plotYZ(1)
     print('Upadted')

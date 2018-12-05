@@ -508,6 +508,36 @@ def bessel_equation(eig_val):
     return eigenvalues
 
 
+def sc_equation(eig_val):
+    """
+        This function defines the functions required for the Sturm-Liouville equation
+        to be Bessel equation and asks user for the conditions in order to solve it.
+
+
+    :param eig_val: Given eigenvalue
+    :return: Proper eigenvalues for the general Sturm-Liouville equation
+    """
+    global p
+    global p_d
+    global q
+    global s
+    global conditions
+    global PROB
+
+    p = lambda x: 1
+    p_d = lambda x: 0
+    r = lambda x: 6*(1/2-1/(np.cosh(x)**2))
+    w = lambda x: 1
+    q = lambda x, eig_value: -r(x) + eig_value * w(x)
+    s = lambda x: 0
+    eigenvalue = lambda x: x
+    eigenvalues = [eigenvalue(i) for i in eig_val]
+    __set_conditions()
+
+    return eigenvalues
+
+
+
 def custom_equation(eig_val):
     """
         This function asks user for the required functions and the conditions
@@ -566,6 +596,8 @@ if __name__ == '__main__':
         eigenvalues = bessel_equation(eig_val)
     elif eq == 3:
         eigenvalues = custom_equation(eig_val)
+    elif eq == 4:
+        eigenvalues = sc_equation(eig_val)
 
     #   Initializing plot
     fig, ax = plt.subplots()

@@ -2,7 +2,7 @@
 # from matplotlib import pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 #
-# re=np.array([[5,6,8],[7,9,6], [8,7,7], [9,6,0],[6,0,5]])
+# re=[[5,6,8],[7,9,6], [8,7,7], [9,6,0],[6,0,5]]
 #
 # fig = plt.figure(figsize=(10,8))
 # ax = fig.gca(projection='3d')
@@ -14,7 +14,7 @@
 # ax.text(17,15,0, "$\\uparrow\\, \\vec{B}$", color="red",fontsize=20)
 # #ax.scatter(re[0,0],re[0,1],c='red') # Starting point
 # ax.plot(re[:,0],re[:,1],re[:,2]) # Electron trajectory
-# # Axes3D.plot(re[:,0],re[:,1],re[:,2]) # Electron trajectory
+# Axes3D.plot(re[:, 0],re[:,1],re[:,2]) # Electron trajectory
 # # Final points
 # #ax.scatter(re[-1,0],re[-1,1],re[-1,2],c='green', marker='>')
 # fig.show()
@@ -96,18 +96,27 @@ import matplotlib.animation as anim
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import style
 
-fig = plt.figure()
-ax = p3.Axes3D(fig)
-
-x=[]
-y=[]
-z=[]
-
-def trajectory(i):
-    x.append(i)
-    y.append(x[-1]**2)
-    z.append(np.sin(y[-1]))
-    ax.plot(x[0:-2], y[0:-2], z[0:-2], c='red')
-
-ani  = anim.FuncAnimation(fig, trajectory, 25, interval=100, blit=False)
+t = np.arange(0, 1200*0.00001, 0.00001)
+x = (137**2/8)*(np.sqrt(1+(8*t/137)**2) -1)
+plt.plot(t,x)
 plt.show()
+# fig = plt.figure()
+# ax = p3.Axes3D(fig)
+#
+# x=[]
+# y=[]
+# z=[]
+#
+# def trajectory(i):
+#     x.append(i)
+#     y.append(x[-1]**2)
+#     z.append(np.sin(y[-1]))
+#     ax.plot(x[0:-1], y[0:-1], z[0:-1], c='blue')
+#     ax.plot(1,2,3)
+#     print(i)
+#
+# ani  = anim.FuncAnimation(fig, trajectory, 25, interval=100, blit=False)
+# plt.show()
+# # import RungeKutta as rk
+# # rk.Butcher_tableau(3)
+# # print(rk.b)

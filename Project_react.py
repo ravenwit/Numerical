@@ -130,7 +130,7 @@ def EBfield(body, index, position, t):
         R_unit = R / r
         E = q[int(not body)] / r ** 2
         E = E * R_unit
-        B = np.cross(R_unit, E)/c
+        B = np.cross(R_unit, E) / c
 
     else:
         ret_index = _retarded_index(body, index, position, t)
@@ -191,11 +191,15 @@ def LorentzForce(body, index, position, velocity, t):
     return q[body] * (E + np.cross(V, B))
 
 
-def __velocity(position, velocity, t, **kwargs):
+def __velocity(position, velocity, acceleration, t, **kwargs):
     return velocity
 
 
-def __acceleration(position, velocity, t, **kwargs):
+def __acceleration(position, velocity, acceleration, t, **kwargs):
+    return acceleration
+
+
+def __acceleration_dt(position, velocity, acceleration, t, **kwargs):
     body = 0
     index = 0
     if kwargs is not None:
@@ -213,32 +217,34 @@ def __acceleration(position, velocity, t, **kwargs):
     # factor3 = factor2 * m[body]
     # factor4 = factor1 / factor3
 
-    gamma = 1/np.sqrt(1-beta**2)
+    gamma = 1 / np.sqrt(1 - beta ** 2)
     F = LorentzForce(body, index, position, velocity, t)
-    factor1 = 1/(m[body]*gamma)
-    factor2 = np.dot(velocity, F)
-    factor3 = factor2*velocity
-    factor4 = factor3/c**2
-    factor5 = F - factor4
-    acc = factor1*factor5
+    factor1 = (3*c**2)/(2*q[body]**2)
+    factor2 = m[body]*c*acceleration*(gamma**3)
+    factor3 = factor2 - F
+    factor4 = factor1*factor3
 
-    return acc
+
+    return factor4
 
 
 def _ode_solve(body, index):
     global h
     global trajectory
     global velocity
+    global acceleration
     global time
 
     last_position = trajectory[body][index]
     last_velocity = velocity[body][index]
+    last_acceleration = acceleration[body][index]
 
     last_time = time[index]
 
-    n_t, n_position, n_velocity = rk.get_single_point(last_position, last_velocity, last_time, __velocity,
-                                                      __acceleration, h, 1, body=body, index=index)
-    return n_position, n_velocity
+    n_t, n_position, n_velocity, n_acceleration = rk.get_single_point3(last_position, last_velocity, last_acceleration,
+                                                                       last_time, __velocity,
+                                                                       __acceleration, __acceleration_dt, h, 1, body=body, index=index)
+    return n_position, n_velocity, n_acceleration
 
 
 fig = plt.figure()
@@ -266,27 +272,25 @@ def get_trajectory_iter(index):
     else:
 
         # For proton
-        n_position0, n_velocity0 = _ode_solve(0, index - 1)
+        n_position0, n_velocity0, n_acceleration0 = _ode_solve(0, index - 1)
 
         # print(n_position0)
 
         trajectory[0][index] = n_position0
         velocity[0][index] = n_velocity0
+        acceleration[0][index] = n_acceleration0
 
         # For electron
-        n_position1, n_velocity1 = _ode_solve(1, index - 1)
+        n_position1, n_velocity1, n_acceleration1 = _ode_solve(1, index - 1)
 
         print(n_position1)
 
         trajectory[1][index] = n_position1
         velocity[1][index] = n_velocity1
+        acceleration[1][index] = n_acceleration1
 
         time.append(time[-1] + h)
 
-        acceleration[0][index] = __acceleration(trajectory[0][index], velocity[0][index], time[index],
-                                                body=0, index=index)
-        acceleration[1][index] = __acceleration(trajectory[1][index], velocity[1][index], time[index],
-                                                body=1, index=index)
 
 
 def get_trajectory_anim(index):
@@ -337,7 +341,6 @@ def get_trajectory():
 def plotEnergy():
     global time
 
-
     timeE = cp.deepcopy(time)
     E = []
     for i in range(len(timeE)):
@@ -380,7 +383,6 @@ def plotEnergy():
 
 
 def plotTrajectory():
-
     ax.plot(trajectory[0][:, 0], trajectory[0][:, 1], trajectory[0][:, 2], c='blue', marker='o',
             markersize=9)
     ax.plot(trajectory[1][:, 0], trajectory[1][:, 1], trajectory[1][:, 2], c='red', marker='o',
@@ -396,9 +398,7 @@ def plotTrajectory():
     plt.savefig("twobody/trajectory.png")
 
 
-
 def plotTrajectoryR():
-
     # ax.plot(trajectory[0][:, 0], trajectory[0][:, 1], trajectory[0][:, 2], c='blue', marker='o',
     #         markersize=9)
     # ax.plot(trajectory[1][:, 0], trajectory[1][:, 1], trajectory[1][:, 2], c='red', marker='o',
@@ -414,9 +414,7 @@ def plotTrajectoryR():
     plt.savefig("twobody/trajectory.png")
 
 
-
 def plotVelocity(body):
-
     timeE = cp.deepcopy(time)
     timeE = timeE[2:]
     velocityE = cp.deepcopy(velocity)
@@ -432,9 +430,7 @@ def plotVelocity(body):
     plt.savefig("twobody/Velocity.png")
 
 
-
 def plotVelocityRadius(body):
-
     RV2 = []
     for i in range(len(time)):
         rad = np.linalg.norm(trajectory[body][i])
@@ -450,9 +446,7 @@ def plotVelocityRadius(body):
     plt.savefig("twobody/VeloctyRadius.png")
 
 
-
 def plotRadius(body):
-
     RV2 = []
     for i in range(len(time)):
         rad = np.linalg.norm(trajectory[int(not body)][i] - trajectory[body][i])
@@ -467,10 +461,8 @@ def plotRadius(body):
     plt.savefig("twobody/radius.png")
 
 
-
 def plotMomentum():
     global time
-
 
     M = []
 
@@ -512,7 +504,6 @@ def plotMomentum():
 
 
 def plotRadiation(body):
-
     M = []
 
     for i in range(len(time)):
@@ -546,7 +537,6 @@ def plotRadiation(body):
 
 
 def plotYZ(body):
-
     fig1, ax1 = plt.subplots()
     plt.title("Charge: {} ; Mass: {}".format(q[body], m[body]))
     plt.xlabel("Z")
@@ -584,8 +574,6 @@ def plotVE(body):
     ax1.plot([np.linalg.norm(V) for V in velocity[body]], E)
     fig1.show()
     plt.savefig("twobody/velocityEnergy.png")
-
-
 
 
 if __name__ == '__main__':
