@@ -427,7 +427,7 @@ def plotVelocity(body):
     ax1.plot(timeE, [np.linalg.norm(velocityE[body][i]) for i in range(len(timeE))])
     fig1.show()
     plt.savefig("twobody/Velocity.png")
-
+=
 
 def plotVelocityRadius(body):
     RV2 = []

@@ -108,12 +108,12 @@ def relaxation(func, conduct, infilt):
             return func
 
 
-def plot_head(X, Y, func):
+def plot_surface(X, Y, func):
     '''
         Plotting a surface curve with wireframe diagram
-    :param X:
-    :param Y:
-    :param func:
+    :param X:   Mesh Grid
+    :param Y:   Mesh Grid
+    :param func:    2D array
     :return:
     '''
 
@@ -124,15 +124,46 @@ def plot_head(X, Y, func):
     ax.set_ylabel("Y", fontsize=10)
     ax.set_zlabel("$\phi (x, y)$", fontsize=12, rotation=-90)
 
-    ax.plot_wireframe(X, Y, func, label='water head')
+    ax.plot_wireframe(X, Y, func, label='Water Head')
 
+    # plt.title('Water head surface')
     ax.legend()
-    plt.show()
+    fig.show()
+
+
+def plot_color_surface(X, Y, func):
+    '''
+        Plotting a surface with high low color scheme
+    :param X:   Mesh Grid
+    :param Y:   Mesh Grid
+    :param func:    2D array
+    :return:
+    '''
+
+    fig, ax = plt.subplots()
+    ax = fig.gca(projection='3d')
+
+    surf = ax.plot_surface(X, Y, phi, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+
+    ax.set_xlabel("X", fontsize=10)
+    ax.set_ylabel("Y", fontsize=10)
+    ax.set_zlabel("$\phi (x, y)$", fontsize=12, rotation=-90)
+
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+
+    # plt.title('Water head surface')
+    ax.legend()
+    fig.show()
 
 
 if __name__ == '__main__':
 
-    # Initialising relaxation scheme
+    # Initialising relaxation scheme satisfying boundary condition
     for step in range(0, ni):
         for j in range(0, ny):
             phi[0][j] = (4 * phi[1][j] - phi[2][j]) / 3
@@ -140,4 +171,6 @@ if __name__ == '__main__':
 
         phi = relaxation(phi, sigma, f)
 
-    plot_head(X, Y, phi)
+    plot_surface(X, Y, phi)
+    plot_color_surface(X, Y, phi)
+    plt.show()
