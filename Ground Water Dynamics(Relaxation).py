@@ -157,7 +157,7 @@ def plot_color_surface(X, Y, func):
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
     # plt.title('Water head surface')
-    ax.legend()
+    # ax.legend()
     fig.show()
 
 
