@@ -15,10 +15,10 @@ array([[2, 2, 2],
 '''
 
 h = 0.00001
-points = 1000
+points = 900
 
 c = 137
-q = [1, 1]
+q = [1, -1]
 m = [1836, 1]
 
 time = []
@@ -42,14 +42,14 @@ def _init_trajectory():
     acceleration = np.array([shaped_zeroes, shaped_zeroes])
     radiation = np.array([np.zeros(points), np.zeros(points)])
 
-    # radius = 0.005
+    radius = 0.005
     # radius = 0.004
     # radius = 0.005
-    radius = 0.05
+    # radius = 0.05
     # theta = np.pi / 4
     theta = np.pi / 4
-    phi = np.pi / 4
-    # phi = np.pi / 2
+    # phi = np.pi / 4
+    phi = np.pi / 2
     x_radius = radius * np.sin(theta) * np.cos(phi)
     y_radius = radius * np.sin(theta) * np.sin(phi)
     z_radius = radius * np.cos(phi)
@@ -59,11 +59,11 @@ def _init_trajectory():
 
     velocity[0][0] = [0, 0, 0]
     # velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
-    # velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
+    velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
     # velocity[1][0] = [-0.03 * c, -0.0003 * c, 0.00001 * c]
     # velocity[1][0] = [0.04 * c, -0.0008 * c, 0.00001 * c]
     # velocity[1][0] = [0.1 * c, 0.1 * c, 0.1 * c]
-    velocity[1][0] = [0.01 * c, -0.01 * c, -0.01 * c]
+    # velocity[1][0] = [0.01 * c, -0.01 * c, -0.01 * c]
     # velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
 
     acceleration[0][0] = [0, 0, 0]
@@ -147,33 +147,39 @@ def EBfield(body, index, position, t):
         # V_dot = (V - V_h) / h
         V_dot = acceleration[int(not body)][ret_index]
         beta_dot = V_dot / c
+        # print(beta_dot)
 
         VR = np.dot(V, R)
 
-        # factor1 = R_unit - beta
-        # factor2 = (1 - np.dot(R_unit, beta)) ** 3
-        # factor3 = (gamma ** 2) * factor2 * r ** 2
-        # factor4 = factor1 / factor3
-        # factor5 = np.cross(R_unit, np.cross(factor1, beta_dot))
-        # factor6 = c * factor2 * r
-        # factor7 = factor5 / factor6
+        factor1 = R_unit - beta
+        # print(factor1)
+        factor2 = (1 - np.dot(R_unit, beta)) ** 3
+        factor3 = (gamma ** 2) * factor2 * r ** 2
+        factor4 = factor1 / factor3
+        factor5 = np.cross(R_unit, np.cross(factor1, beta_dot))
+        # print(np.cross(factor1, beta_dot))
+        # print(factor5)
+        factor6 = c * factor2 * r
+        factor7 = factor5 / factor6
+        # print(factor7)
+        # factor8 = factor4 + factor7
+        factor8 = factor4
+
+        E = q[int(not body)] * factor8
+
+        # factor1 = 1 / (r - VR / c) ** 3
+        # factor2 = R - r * V / c
+        # factor3 = 1 - (v / c) ** 2
+        # factor4 = factor3 * factor2
+        # factor5 = V_dot / c ** 2
+        # factor6 = np.cross(factor2, factor5)
+        # factor7 = np.cross(R, factor6)
+        # print(factor7)
         # factor8 = factor4 + factor7
         # # factor8 = factor4
+        # factor9 = factor1 * factor8
         #
-        # E = q[int(not body)] * factor8
-
-        factor1 = 1 / (r - VR / c) ** 3
-        factor2 = R - r * V / c
-        factor3 = 1 - (v / c) ** 2
-        factor4 = factor3 * factor2
-        factor5 = V_dot / c ** 2
-        factor6 = np.cross(factor2, factor5)
-        factor7 = np.cross(R, factor6)
-        factor8 = factor4 + factor7
-        # factor8 = factor4
-        factor9 = factor1 * factor8
-
-        E = q[int(not body)] * factor9
+        # E = q[int(not body)] * factor9
 
         #
         B = np.cross(R_unit, E)
@@ -243,7 +249,8 @@ def _ode_solve(body, index):
 
 
 # ax.set_xlim3d([0.0, 0.01])
-
+fig = plt.figure()
+ax = fig.gca(projection='3d')
 
 def get_trajectory_iter(index):
     global h
@@ -276,8 +283,11 @@ def get_trajectory_iter(index):
 
         acceleration[0][index] = __acceleration(trajectory[0][index], velocity[0][index], time[index],
                                                 body=0, index=index)
+        # print(acceleration[0][index])
+        # print(acceleration[0][index])
         acceleration[1][index] = __acceleration(trajectory[1][index], velocity[1][index], time[index],
                                                 body=1, index=index)
+        # print(acceleration[1][index])
 
 
 def get_trajectory_anim(index):
@@ -293,7 +303,7 @@ def get_trajectory_anim(index):
         # For proton
         n_position0, n_velocity0 = _ode_solve(0, index - 1)
 
-        print(n_position0)
+        # print(n_position0)
 
         trajectory[0][index] = n_position0
         velocity[0][index] = n_velocity0
@@ -301,23 +311,29 @@ def get_trajectory_anim(index):
         # For electron
         n_position1, n_velocity1 = _ode_solve(1, index - 1)
 
-        print(n_position1)
+        # print(n_velocity1)
+        # print(n_position1)
 
         trajectory[1][index] = n_position1
         velocity[1][index] = n_velocity1
 
         time.append(time[-1] + h)
+        acceleration[0][index] = __acceleration(trajectory[0][index], velocity[0][index], time[index],
+                                                body=0, index=index)
+        # print(acceleration[0][index])
+        acceleration[1][index] = __acceleration(trajectory[1][index], velocity[1][index], time[index],
+                                                body=1, index=index)
         index += 1
-        # ax.clear()
-        # ax.plot(trajectory[0][:index, 0], trajectory[0][:index, 1], trajectory[0][:index, 2], c='blue', marker='o',
-        #         markersize=9)
-        # ax.plot(trajectory[1][:index, 0], trajectory[1][:index, 1], trajectory[1][:index, 2], c='red', marker='o',
-        #         linestyle='none',
-        #         markersize=3)
-        # ax.plot(np.array([trajectory[1][:index, 0][-1]]), np.array([trajectory[1][:index, 1][-1]]),
-        #         np.array([trajectory[1][:index, 2][-1]]), c='green', marker='>',
-        #         markersize=9)
-        # if index: plt.savefig('twobody/trajec1/figure{}'.format(index))
+        ax.clear()
+        ax.plot(trajectory[0][:index, 0], trajectory[0][:index, 1], trajectory[0][:index, 2], c='blue', marker='o',
+                markersize=9)
+        ax.plot(trajectory[1][:index, 0], trajectory[1][:index, 1], trajectory[1][:index, 2], c='red', marker='o',
+                linestyle='none',
+                markersize=3)
+        ax.plot(np.array([trajectory[1][:index, 0][-1]]), np.array([trajectory[1][:index, 1][-1]]),
+                np.array([trajectory[1][:index, 2][-1]]), c='green', marker='>',
+                markersize=9)
+        # if index: plt.savefig('twobody/trajec/figure{}'.format(index))
 
 
 def get_trajectory():
@@ -397,20 +413,20 @@ def plotTrajectory():
     plt.savefig("twobody/trajectory.png")
 
 
-def plotTrajectoryR():
-    # ax.plot(trajectory[0][:, 0], trajectory[0][:, 1], trajectory[0][:, 2], c='blue', marker='o',
-    #         markersize=9)
-    # ax.plot(trajectory[1][:, 0], trajectory[1][:, 1], trajectory[1][:, 2], c='red', marker='o',
-    #         markersize=3)
-    ax.plot(np.array([trajectory[0][:, 0][-1]]), np.array([trajectory[0][:, 1][-1]]),
-            np.array([trajectory[0][:, 2][-1]]), c='blue', marker='o',
-            markersize=15)
-    ax.plot(np.array([trajectory[1][:, 0][-1]]), np.array([trajectory[1][:, 1][-1]]),
-            np.array([trajectory[1][:, 2][-1]]), c='red', marker='o',
-            markersize=15)
-
-    fig.show()
-    plt.savefig("twobody/trajectory.png")
+# def plotTrajectoryR():
+#     # ax.plot(trajectory[0][:, 0], trajectory[0][:, 1], trajectory[0][:, 2], c='blue', marker='o',
+#     #         markersize=9)
+#     # ax.plot(trajectory[1][:, 0], trajectory[1][:, 1], trajectory[1][:, 2], c='red', marker='o',
+#     #         markersize=3)
+#     ax.plot(np.array([trajectory[0][:, 0][-1]]), np.array([trajectory[0][:, 1][-1]]),
+#             np.array([trajectory[0][:, 2][-1]]), c='blue', marker='o',
+#             markersize=15)
+#     ax.plot(np.array([trajectory[1][:, 0][-1]]), np.array([trajectory[1][:, 1][-1]]),
+#             np.array([trajectory[1][:, 2][-1]]), c='red', marker='o',
+#             markersize=15)
+#
+#     fig.show()
+#     plt.savefig("twobody/trajectory.png")
 
 
 def plotVelocity(body):
@@ -427,7 +443,6 @@ def plotVelocity(body):
     ax1.plot(timeE, [np.linalg.norm(velocityE[body][i]) for i in range(len(timeE))])
     fig1.show()
     plt.savefig("twobody/Velocity.png")
-=
 
 def plotVelocityRadius(body):
     RV2 = []
@@ -527,12 +542,12 @@ def plotRadiation(body):
         #     M.append((M0 + M1))
 
     fig1, ax1 = plt.subplots()
-    # plt.title("Charge: {} ; Mass: {}".format(q[body], m[body]))
+    plt.title("Charge: {} ; Mass: {}".format(q[body], m[body]))
     plt.xlabel("Time (in sec.)")
     plt.ylabel("Radiation Power (in Ha/sec)")
     ax1.plot(time, radiation[body])
     fig1.show()
-    plt.savefig("twobody/radiation.png")
+    plt.savefig("twobody/radiation Charge {}  Mass {}.png".format(q[body], m[body]))
 
 
 def plotYZ(body):
@@ -586,8 +601,8 @@ if __name__ == '__main__':
     # plotRadiation(0)
     # plotRadiation(1)
     # plotVelocity(0)
-    plotVelocity(1)
-    plotRadius(1)
+    # plotVelocity(1)
+    # plotRadius(1)
     # plotVelocityRadius(1)
     # plotYZ(1)
     print('Upadted')

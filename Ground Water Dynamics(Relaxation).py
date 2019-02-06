@@ -143,7 +143,7 @@ def plot_color_surface(X, Y, func):
     fig, ax = plt.subplots()
     ax = fig.gca(projection='3d')
 
-    surf = ax.plot_surface(X, Y, phi, cmap=cm.coolwarm,
+    surf = ax.plot_surface(X, Y, func, cmap=cm.coolwarm,
                            linewidth=0, antialiased=False)
 
     ax.set_xlabel("X", fontsize=10)

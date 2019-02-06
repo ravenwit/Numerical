@@ -1,0 +1,222 @@
+0.05
+0.01c
+
+
+0.05
+0.01,-0.01, -0.01
+
+rad=0.005
+vel=-0.08,-0.0008,0.00001
+h=0.00001
+
+particle rotating
+theta = np.pi / 4
+    phi = np.pi / 2
+rad=0.004
+vel=-0.08,-0.0008,0.00001
+h=0.00001
+points = 700
+
+
+
+
+Energy loss, radiation loss
+theta = np.pi / 4
+phi = np.pi / 2
+radius = 0.05
+velocity[1][0] = [0.1 * c, 0.1 * c, 0.1 * c]
+h = 0.00001
+points = 350
+
+
+
+particle falling
+theta = pi/4
+phi = np.pi / 4
+radius = 0.005
+velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
+h = 0.00001
+points = 57
+
+
+
+synchotron radiation 
+h = 0.00001
+points = 150
+radius = 0.005
+theta = np.pi / 4
+    phi = np.pi / 4
+velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
+
+
+
+h = 0.00001
+points = 1800
+radius = 0.05
+velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
+
+page 27
+http://www.fisica.uniud.it/~deangeli/fismod/Radiation.pdf
+
+page 15, 18
+http://physics.usask.ca/~hirose/p812/notes/Ch8.pdf
+
+page 50
+http://www.tat.physik.uni-tuebingen.de/~kokkotas/Teaching/Field_Theory_files/FT_course05.pdf
+
+
+###4
+h = 0.00001
+points = 1000
+
+    radius = 0.005
+theta = np.pi / 4
+phi = np.pi / 2
+
+velocity[1][0] = [-0.08 * c, -0.0008 * c, 0.00001 * c]
+0.08c
+
+
+
+eelectron repelled
+###3
+h = 0.00001
+points = 1000
+   radius = 0.05
+
+    theta = np.pi / 4
+    phi = np.pi / 4
+velocity[1][0] = [0.01 * c, -0.01 * c, -0.01 * c]
+0.0173c
+0.02c
+
+
+
+
+######1
+h = 0.00001
+points = 100
+radius = 0.005
+    theta = np.pi / 4
+    phi = np.pi / 4
+velocity[1][0] = [0.01 * c, -0.01 * c, -0.01 * c]
+0.02c
+
+
+
+page 14
+http://sci-hub.tw/https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.19.147
+
+
+
+bagrmstahlng]
+
+h = 0.00001
+points = 500
+    radius = 0.05
+  theta = np.pi / 4
+    phi = np.pi / 4
+    velocity[1][0] = [0.1 * c, 0.1 * c, 0.1 * c]
+
+
+
+
+dirac quote 
+http://sci-hub.tw/https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.19.147
+page 16
+
+
+
+accelaretaoin toeards outside
+with adv
+DEV = 50
+
+h = 0.00001
+points = 1200
+radius = 0.05
+theta = np.pi / 4
+phi = np.pi / 2
+velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
+
+
+fall
+points = 58
+theta = np.pi / 4
+    phi = np.pi / 4
+radius = 0.005
+    velocity[1][0] = [0.001 * c, -0.008 * c, -0.001 * c]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sympy documentation
+https://maths-with-python.readthedocs.io/en/latest/07-sympy.html
+https://codeburst.io/building-beautiful-command-line-interfaces-with-python-26c7e1bb54df
+https://code-maven.com/interactive-shell-with-cmd-in-python
+https://wiki.python.org/moin/CmdModule
+http://people.duke.edu/~ccc14/sta-663-2016/08_LinearAlgebra2.html
+https://www.wikiwand.com/en/Eigenvalue_algorithm
+https://www.wikiwand.com/en/Durand%E2%80%93Kerner_method
+https://www.wikiwand.com/en/Aberth_method
+
+
+
+Runge-Kutta and B-series
+http://www.unige.ch/~vilmart/algebraic-bseries.pdf
+https://www.wikiwand.com/en/Algebraic_structure
+http://users.ntua.gr/tsitoura/ModifiedRK.pdf
+https://arxiv.org/pdf/1512.00906.pdf
+http://people.cs.vt.edu/~ptranq/Trees_And_Order_Conditions.pdf
+https://www-m3.ma.tum.de/foswiki/pub/M3/Allgemeines/FolkmarBornemannPublications/selcuk.pdf
+http://vmm.math.uci.edu/odeandcm/PDF_Files/Appendices/AppendixH.pdf
+http://sci-hub.tw/https://doi.org/10.1016/j.camwa.2011.06.058
+http://sci-hub.tw/https://doi.org/10.1016/j.cam.2004.09.057
+http://sci-hub.tw/https://doi.org/10.1016/j.jsc.2003.07.001
+http://people.cs.vt.edu/~asandu/Public/Qual2011/DiffEqn/Butcher_1996_RK-history.pdf
+http://www.math.utk.edu/~swise/classes/spring17/math572/Chapters/chap08.pdf
+http://people.math.sfu.ca/~jverner/RKlowerSO_main19.pdf
+https://www.math.uh.edu/~hjm/june1995/p00379-p00388.pdf
+https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20160005923.pdf
+https://www.fields.utoronto.ca/programs/scientific/11-12/SciCADE2011/presentations/Imran-Sci-Gulshad.pdf
+https://www.math.auckland.ac.nz/~butcher/ODE-book-2008/Tutorials/RK-methods.pdf
+https://www.math.auckland.ac.nz/~butcher/ODE-book-2008/Tutorials/IRK.pdf
+https://www.math.auckland.ac.nz/~butcher/CONFERENCES/JAPAN/KYUSHU/kyushu-slides.pdf
+https://brage.bibsys.no/xmlui/bitstream/handle/11250/2352711/13578_FULLTEXT.pdf?sequence=1
+http://homepage.math.uiowa.edu/~ljay/publications.dir/Lobatto.pdf
+http://sce.uhcl.edu/rungekutta/rk1210.txt
+http://sce.uhcl.edu/rungekutta/
+http://www.aip.de/groups/soe/local/numres/bookcpdf/c16-1.pdf
+
+
+feddev-lavvvere
+http://mathfaculty.fullerton.edu/mathews/n2003/FaddeevLeverrierMod.html
+
+
+charged particle code
+https://flothesof.github.io/charged-particle-trajectories-E-and-B-fields.html
+https://fenix.tecnico.ulisboa.pt/downloadFile/845043405431689/Athens-Uniform%20and%20constant%20electromagnetic%20fields.pdf
+https://static1.squarespace.com/static/56b6357e01dbaea0266fe701/t/56edaecd01dbaec271a2cd8d/1458417364484/ottilia_andersson_simulation_of_the_trajectory_of_a_charged_particle_in_two_superpositioned_magnetic_fields.pdf
+
+
+
