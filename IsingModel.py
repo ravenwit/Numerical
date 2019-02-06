@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 from matplotlib import cm
 import matplotlib.animation as anim
+from scipy.sparse import spdiags, linalg, eye
+from time import time
 
 
 class Ising():
@@ -19,7 +21,7 @@ class Ising():
     """
 
     #   Defining Plot
-    f = plt.figure(figsize=(10, 10), dpi=80)
+    f = plt.figure(figsize=(5, 5), dpi=80)
     ax = f.gca()
 
     #   Physical Constants
@@ -175,7 +177,6 @@ class Ising():
         Magnet = Magnet2 = 0
         config = self._initialize_state()
         iT = 1.0 / temperature
-        iT2 = iT ** 2
 
         #   Equilibrium process
         for i in range(self.eq_step):
@@ -245,6 +246,8 @@ class Ising():
             print("Susceptibility in temperature {} is {}".format(self.T[index_t], self.X[index_t]))
 
     def plot_every(self):
+        self.f = plt.figure(figsize=(15, 10), dpi=80)
+
         star = mpath.Path.unit_regular_star(6)
         circle = mpath.Path.unit_circle()
         # concatenate the circle with an internal cutout of the star
@@ -253,25 +256,25 @@ class Ising():
         cut_star = mpath.Path(verts, codes)
 
         ax = self.f.add_subplot(2, 2, 1)
-        plt.scatter(self.T, self.E, s=10, marker='x', color='IndianRed')
+        plt.plot(self.T, self.E, '--r', marker=cut_star, markersize=7, color='IndianRed')
         plt.xlabel("Temperature (T)", fontsize=20)
         plt.ylabel("Energy ", fontsize=20)
         plt.axis('tight')
 
         ax1 = self.f.add_subplot(2, 2, 2)
-        plt.scatter(self.T, abs(self.M), s=10, marker='x', color='RoyalBlue')
+        plt.plot(self.T, abs(self.M), '--r', marker=cut_star, markersize=7, color='RoyalBlue')
         plt.xlabel("Temperature (T)", fontsize=20)
         plt.ylabel("Magnetisation ", fontsize=20)
         plt.axis('tight')
 
         ax2 = self.f.add_subplot(2, 2, 3)
-        plt.scatter(self.T, self.C, s=10, marker='x', color='RoyalBlue')
+        plt.plot(self.T, self.C, '--r', marker=cut_star, markersize=7, color='Chocolate')
         plt.xlabel("Temperature (T)", fontsize=20)
         plt.ylabel("Specific Heat ", fontsize=20)
         plt.axis('tight')
 
         ax3 = self.f.add_subplot(2, 2, 4)
-        plt.scatter(self.T, self.X, s=10, marker='x', color='RoyalBlue')
+        plt.plot(self.T, self.X, '--r', marker=cut_star, markersize=7, color='Crimson')
         plt.xlabel("Temperature (T)", fontsize=20)
         plt.ylabel("Susceptibility ", fontsize=20)
         plt.axis('tight')
@@ -283,6 +286,7 @@ class Ising():
             Plot energy vs. temperature
         :return:
         '''
+        self.f = plt.figure(figsize=(15, 10), dpi=80)
         # self.calc_EMCX()
         plt.scatter(self.T, self.E, s=20, marker='o', color='IndianRed')
         plt.xlabel("Temperature (T)", fontsize=20)
@@ -295,6 +299,7 @@ class Ising():
             Plot magnetisation vs. temperature
         :return:
         '''
+        self.f = plt.figure(figsize=(15, 10), dpi=80)
         # self.calc_EMCX()
         plt.scatter(self.T, abs(self.M), s=20, marker='o', color='RoyalBlue')
         plt.xlabel("Temperature (T)", fontsize=20)
@@ -307,6 +312,7 @@ class Ising():
             Plot specific heat vs. temperature
         :return:
         '''
+        self.f = plt.figure(figsize=(15, 10), dpi=80)
         # self.calc_EMCX()
         plt.scatter(self.T, self.C, s=20, marker='o', color='RoyalBlue')
         plt.xlabel("Temperature (T)", fontsize=20)
@@ -319,6 +325,7 @@ class Ising():
             Plot susceptibility vs. temperature
         :return:
         '''
+        self.f = plt.figure(figsize=(15, 10), dpi=80)
         # self.calc_EMCX()
         plt.scatter(self.T, self.X, s=20, marker='o', color='RoyalBlue')
         plt.xlabel("Temperature (T)", fontsize=20)
@@ -328,15 +335,15 @@ class Ising():
 
     def visualize(self, index, config, temp):
         N = self.N
-        self.monte_carlo(config, 1.0 / temp)
         X, Y = np.meshgrid(range(N), range(N))
+        self.monte_carlo(config, 1.0 / temp)
         plt.setp(self.ax.get_yticklabels(), visible=False)
         plt.setp(self.ax.get_xticklabels(), visible=False)
-        self.ax.pcolormesh(X, Y, config, cmap=plt.get_cmap('RdBu'))
+        self.ax.pcolormesh(X, Y, config, cmap=plt.get_cmap('seismic'))
         plt.title('Time={}'.format(index))
         plt.axis('tight')
 
-    def simulate(self, time, temperature=Temperature):
+    def simulate(self, times, temperature=Temperature):
         '''
             Simulate the evolution of monte carlo algorithm
         :param temperature:
@@ -344,10 +351,56 @@ class Ising():
         '''
 
         config = self._initialize_state()
+        time0 = time()
+        self.visualize(1, config, temperature)
+        time1 = time()
+        interval = 1000 * (1 / 60) - float(time1 - time0)
 
-        ani = anim.FuncAnimation(self.f, self.visualize, time,
+        ani = anim.FuncAnimation(self.f, self.visualize, times,
                                  fargs=(config, temperature),
-                                 interval=1, blit=False)
+                                 interval=interval, blit=False)
+        plt.show()
+
+    a, b, k = 0, 1.0, 100.0
+    dh, dt = 1.0, 1e-3
+
+    def mu(self, u):
+        return self.a * u + self.b * u * u * u
+
+    def laplacian(self, Ng):
+        '''Construct a sparse matrix that applies the 5-point Laplacian discretization'''
+        e = np.ones(Ng ** 2)
+        e2 = ([1] * (Ng - 1) + [0]) * Ng
+        e3 = ([0] + [1] * (Ng - 1)) * Ng
+        h = self.dh
+        A = spdiags([-4 * e, e2, e3, e, e], [0, -1, 1, -Ng, Ng], Ng ** 2, Ng ** 2)
+        A /= h ** 2
+        return A
+
+    def visualize1(self, i, x, y, u, L):
+        u -= self.dt * (self.mu(u) - self.k * L.dot(u))
+        # print(u)
+        U = u.reshape((self.N, self.N))
+        plt.setp(self.ax.get_yticklabels(), visible=False)
+        plt.setp(self.ax.get_xticklabels(), visible=False)
+        plt.pcolormesh(x, y, U, cmap=plt.get_cmap('RdBu'))
+        plt.title('Time={}'.format(i))
+
+    def simulate1(self, times):
+        x = np.linspace(-1, 1, self.N)
+        y = np.linspace(-1, 1, self.N)
+        X, Y = np.meshgrid(x, y)
+        u = np.random.randn(self.N * self.N, 1)
+        L = self.laplacian(self.N)
+
+        time0 = time()
+        self.visualize1(1, x, y, u, L)
+        time1 = time()
+        interval = 1000 * (1 / 60) - float(time1 - time0)
+
+        ani = anim.FuncAnimation(self.f, self.visualize1, times,
+                                 fargs=(x, y, u, L),
+                                 interval=interval, blit=False)
         plt.show()
 
 
@@ -357,11 +410,12 @@ if __name__ == '__main__':
         Ising model with 16x16 lattice and 50 temperature points to  plot
         Simulation time is et to 1000
     '''
-    ising = Ising(16)
+    ising = Ising(50)
 
     eq = int(input("Simulation or plot \n "
                    "\t[1] Simulation\n"
                    "\t[2] Plot\n"
+                   "\t[3] Dynamics\n"
                    "\tSelect (1/2): "))
     if eq == 2:
         temp_poinr = int(input("\nTemperature Point: "))
@@ -372,3 +426,5 @@ if __name__ == '__main__':
         temp = float(input("\nTemperature : "))
         if temp < 0: temp = -temp
         ising.simulate(1000, temp)
+    elif eq == 3:
+        ising.simulate1(1000)
